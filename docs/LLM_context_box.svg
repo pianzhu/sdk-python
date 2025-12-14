@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <defs>
+    <style>
+      .title { font: 700 28px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 500 16px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #374151; }
+      .label { font: 600 16px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #111827; }
+      .text { font: 14px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #111827; }
+      .small { font: 12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #374151; }
+      .box { fill: #ffffff; stroke: #111827; stroke-width: 2; rx: 14; }
+      .box2 { fill: #f9fafb; stroke: #111827; stroke-width: 2; rx: 14; }
+      .muted { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; rx: 14; }
+      .arrow { stroke: #111827; stroke-width: 2.5; fill: none; marker-end: url(#mArrow); }
+      .dashed { stroke-dasharray: 7 7; }
+      .pill { fill: #111827; }
+      .pillText { font: 700 12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: #ffffff; }
+    </style>
+    <marker id="mArrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
+      <path d="M0,0 L14,7 L0,14 Z" fill="#111827" />
+    </marker>
+  </defs>
+
+  <!-- Header -->
+  <text x="60" y="58" class="title">LLM 交互的上下文黑盒：一次对话 / 一次工具调用 / MCP 调用到底消耗了什么</text>
+  <text x="60" y="88" class="subtitle">核心结论：每次“发给模型”的输入 = 你看到的对话 + 系统/开发者指令 + 工具/协议描述 +（可能的）检索/记忆/摘要 + 上一次工具返回；输出 = 模型生成的文本或工具调用 JSON。</text>
+
+  <!-- Left: Prompt Builder -->
+  <rect x="60" y="130" width="560" height="760" class="box" />
+  <rect x="60" y="130" width="560" height="60" class="muted" />
+  <text x="86" y="168" class="label">A. Prompt/Context Builder（宿主：IDE/Agent/框架）</text>
+
+  <!-- Sections inside builder -->
+  <rect x="90" y="215" width="500" height="118" class="box2" />
+  <text x="110" y="240" class="label">1) 固定指令层</text>
+  <text x="110" y="265" class="text">- system：安全/角色/格式/全局约束（几乎每次都要发）</text>
+  <text x="110" y="287" class="text">- developer：产品策略、工具规则、编码规范等（常驻或按需）</text>
+  <text x="110" y="309" class="small">Token 消耗：输入 tokens（每轮都算，除非宿主做了缓存但多数会重复发送）</text>
+
+  <rect x="90" y="348" width="500" height="158" class="box2" />
+  <text x="110" y="373" class="label">2) 对话历史层</text>
+  <text x="110" y="398" class="text">- user/assistant 过往消息（可能被截断、压缩、或替换为摘要）</text>
+  <text x="110" y="420" class="text">- 本轮 user 新消息（你刚输入的内容）</text>
+  <text x="110" y="442" class="text">- 结构化上下文：文件树、环境信息、选区、日志等（如果宿主注入）</text>
+  <text x="110" y="464" class="small">Token 消耗：输入 tokens（历史越长越贵；超过窗口会被裁剪/总结）</text>
+  <text x="110" y="488" class="small">常见策略：滑动窗口、最近 N 轮、摘要记忆、关键片段 pin 住</text>
+
+  <rect x="90" y="521" width="500" height="168" class="box2" />
+  <text x="110" y="546" class="label">3) 工具/能力描述层（Tool Schemas）</text>
+  <text x="110" y="571" class="text">- 工具名、参数 schema、返回类型、使用约束（供模型决定是否调用）</text>
+  <text x="110" y="593" class="text">- 可能包含：函数签名、示例、可用资源（文件/数据库/网络）</text>
+  <text x="110" y="615" class="text">- MCP：把“远端服务器提供的 tools 列表”也注入到这里</text>
+  <text x="110" y="637" class="small">Token 消耗：输入 tokens（工具越多/描述越长越贵；很多框架会裁剪说明）</text>
+  <text x="110" y="661" class="small">注意：模型并不“真的连网/读盘”，它只看到这些说明与后续返回</text>
+
+  <rect x="90" y="704" width="500" height="156" class="box2" />
+  <text x="110" y="729" class="label">4) 额外注入层（可选）</text>
+  <text x="110" y="754" class="text">- RAG 检索结果：文档片段/代码片段/数据库片段（作为引用上下文）</text>
+  <text x="110" y="776" class="text">- Memory：长期/短期记忆（事实、偏好、用户画像、任务状态）</text>
+  <text x="110" y="798" class="text">- 运行态：上一步工具返回、异常栈、执行日志（通常最关键）</text>
+  <text x="110" y="820" class="small">Token 消耗：输入 tokens（检索命中越多越贵；要做 top-k 与去重）</text>
+
+  <!-- Middle: Model -->
+  <rect x="680" y="210" width="440" height="420" class="box" />
+  <rect x="680" y="210" width="440" height="60" class="muted" />
+  <text x="702" y="248" class="label">B. Model Inference（LLM）</text>
+  <text x="702" y="288" class="text">输入：A 组装后的消息序列（= 上下文窗口的一部分）</text>
+  <text x="702" y="318" class="text">内部：注意力/推理（黑盒，不回传“思维过程”）</text>
+  <text x="702" y="348" class="text">输出（两类之一）：</text>
+  <text x="722" y="376" class="text">① assistant 文本：直接回答/解释/代码片段</text>
+  <text x="722" y="404" class="text">② tool call：结构化 JSON（调用哪个工具 + 参数）</text>
+  <text x="702" y="444" class="small">Token 消耗：输出 tokens（包含 tool call JSON 自身）</text>
+  <text x="702" y="470" class="small">额外：部分平台还会产生“推理 tokens/思考 tokens”但不一定对外可见</text>
+  <text x="702" y="500" class="small">约束：最大上下文窗口、最大输出长度、温度/采样参数、系统安全策略</text>
+
+  <!-- Right: Tool Runner + MCP -->
+  <rect x="1160" y="130" width="380" height="760" class="box" />
+  <rect x="1160" y="130" width="380" height="60" class="muted" />
+  <text x="1182" y="168" class="label">C. Tool Runner / MCP Host</text>
+
+  <rect x="1190" y="215" width="320" height="170" class="box2" />
+  <text x="1210" y="240" class="label">工具执行（本地/云）</text>
+  <text x="1210" y="265" class="text">- 校验参数 schema</text>
+  <text x="1210" y="287" class="text">- 运行：读文件/跑命令/查库/HTTP</text>
+  <text x="1210" y="309" class="text">- 产出：结构化结果 + 日志/错误</text>
+  <text x="1210" y="333" class="small">注意：工具返回会作为“下一轮输入消息”注入给模型</text>
+
+  <rect x="1190" y="402" width="320" height="250" class="box2" />
+  <text x="1210" y="427" class="label">MCP（Model Context Protocol）</text>
+  <text x="1210" y="452" class="text">- MCP Server 暴露 tools/resources/prompts</text>
+  <text x="1210" y="474" class="text">- Host 拉取能力清单 → 注入到 A-3</text>
+  <text x="1210" y="496" class="text">- 模型发起 tool call → Host 转发到 MCP</text>
+  <text x="1210" y="518" class="text">- MCP 返回结果 → Host 规范化 → 注入到 A-4</text>
+  <text x="1210" y="542" class="small">Token 消耗：能力清单与返回结果都计入输入 tokens</text>
+  <text x="1210" y="566" class="small">协议往返本身不消耗 LLM tokens，但会影响“可见上下文”大小</text>
+  <text x="1210" y="590" class="small">常见优化：工具描述压缩、结果截断、只带必要字段</text>
+
+  <rect x="1190" y="670" width="320" height="190" class="box2" />
+  <text x="1210" y="695" class="label">缓存/裁剪/摘要策略</text>
+  <text x="1210" y="720" class="text">- 旧对话裁剪（滑窗）</text>
+  <text x="1210" y="742" class="text">- 自动摘要（摘要也要 tokens）</text>
+  <text x="1210" y="764" class="text">- 工具结果截断（保留头尾/关键信息）</text>
+  <text x="1210" y="786" class="text">- RAG 去重与 top-k</text>
+  <text x="1210" y="810" class="small">目标：把“最影响决策的信息”留在窗口里</text>
+
+  <!-- Arrows -->
+  <path d="M620 470 C650 470, 650 420, 680 420" class="arrow" />
+  <text x="642" y="410" class="small">组装后的输入消息</text>
+
+  <path d="M1120 420 C1140 420, 1140 300, 1160 300" class="arrow" />
+  <text x="1128" y="290" class="small">tool call JSON（模型输出）</text>
+
+  <path d="M1160 350 C1140 350, 1140 540, 1120 540" class="arrow" />
+  <text x="1010" y="560" class="small">tool result（下一轮输入的一部分）</text>
+
+  <path d="M680 560 C650 560, 650 710, 620 710" class="arrow dashed" />
+  <text x="640" y="740" class="small">工具结果/检索/记忆 回填</text>
+
+  <!-- Bottom: Token accounting -->
+  <rect x="60" y="910" width="1480" height="50" class="muted" />
+  <text x="80" y="942" class="text">Token 账本：本轮输入 tokens = system + developer +（截断后的）history + tool schemas +（可选）RAG/Memory + 上次 tool result；本轮输出 tokens = assistant 文本或 tool call JSON。</text>
+
+  <!-- Pills -->
+  <rect x="90" y="180" width="90" height="22" rx="11" class="pill" />
+  <text x="106" y="196" class="pillText">INPUT</text>
+  <rect x="1188" y="180" width="90" height="22" rx="11" class="pill" />
+  <text x="1204" y="196" class="pillText">TOOLS</text>
+  <rect x="702" y="180" width="110" height="22" rx="11" class="pill" />
+  <text x="718" y="196" class="pillText">INFERENCE</text>
+</svg>
